@@ -7,83 +7,55 @@ from bokeh.models import CustomJS
 from streamlit_bokeh_events import streamlit_bokeh_events
 from PIL import Image
 
-# --- CONFIGURACIÓN DE PÁGINA: Compacta ---
-st.set_page_config(
-    page_title="Control de Voz Compacto",
-    layout="wide", # Usamos todo el ancho para reducir altura
-    initial_sidebar_state="collapsed"
-)
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="Control de Voz", layout="wide")
 
-# --- CSS: Legibilidad y Contraste Extremo ---
-# Fondo blanco puro, texto gris oscuro para máximo contraste, diseño plano (flat)
+# --- CSS: MODO OSCURO (DARK MODE) ---
 st.markdown("""
     <style>
-    /* Fondo blanco puro para la app */
+    /* Fondo de la app en gris muy oscuro */
     .stApp {
-        background-color: #FFFFFF;
+        background-color: #121212;
+        color: #e0e0e0;
     }
 
-    /* Título principal: Grande, oscuro y nítido */
-    .main-title {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        color: #212529; /* Gris casi negro */
-        font-weight: 700;
-        margin-bottom: 2px;
-        font-size: 2.2em;
-    }
+    /* Títulos en blanco para asegurar visibilidad */
+    .main-title { color: #ffffff !important; }
+    .sub-title { color: #b0b0b0 !important; }
 
-    /* Subtítulo: Más pequeño y sutil */
-    .sub-title {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        color: #6c757d; /* Gris medio */
-        font-weight: 400;
-        margin-top: 0px;
-        margin-bottom: 20px;
-    }
-
-    /* Contenedor de "Tarjeta" Plana: Fondo gris muy claro, bordes nítidos */
+    /* Tarjetas oscuras */
     .flat-card {
-        background-color: #f8f9fa; /* Gris clarísimo */
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-        padding: 15px;
+        background-color: #1e1e1e;
+        border-radius: 10px;
+        border: 1px solid #333333;
+        padding: 20px;
         margin-bottom: 15px;
+        color: #e0e0e0;
     }
 
-    /* Subcabeceras dentro de tarjetas */
+    /* Texto de cabecera en las tarjetas */
     .card-header {
-        color: #495057;
+        color: #ffffff;
         font-weight: 600;
         font-size: 1.1em;
         margin-bottom: 10px;
     }
 
-    /* Botón Bokeh personalizado: Verde sólido, sin degradados */
+    /* Botón verde que resalta en fondo oscuro */
     .bk-btn {
-        background-color: #28a745 !important; /* Verde sólido */
+        background-color: #28a745 !important;
         color: white !important;
         font-weight: bold !important;
         border-radius: 6px !important;
         border: none !important;
-        font-size: 1.0em !important;
-        height: 45px !important;
-        width: 130px !important;
     }
-
-    /* Ocultar elementos de Streamlit que ocupan espacio */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
     
-    /* Reducir márgenes superiores de bloques de Streamlit */
-    .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
+    /* Asegurar que el texto normal se lea bien */
+    div { color: #e0e0e0; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- LÓGICA MQTT (SE MANTIENE IGUAL) ---
+# --- LÓGICA MQTT ---
 broker = "broker.mqttdashboard.com"
 port = 1883
 topic = "voice_ctrl"
@@ -100,27 +72,21 @@ if "client" not in st.session_state:
 st.markdown('<h1 class="main-title">Interfaces Multimodales</h1>', unsafe_allow_html=True)
 st.markdown('<h3 class="sub-title">Control de Voz Compacto</h3>', unsafe_allow_html=True)
 
-# --- CUERPO PRINCIPAL (2 COLUMNAS PARA CERO SCROLL) ---
+# --- CUERPO ---
 col_ctrl, col_msg = st.columns([1, 1.2], gap="medium")
 
-# Columna 1: Panel de Control (Imagen, Botón, Instrucciones)
 with col_ctrl:
     st.markdown('<div class="flat-card">', unsafe_allow_html=True)
     st.markdown('<div class="card-header">Panel de Acción</div>', unsafe_allow_html=True)
     
-    # Imagen centrada y compacta (usando tu imagen suministrada)
     try:
-        # Asegúrate de tener 'persona hablando.jpg' en la carpeta
         image = Image.open('persona hablando.jpg')
-        st.image(image, width=120, use_column_width=False)
+        st.image(image, width=120)
     except:
         st.info("Imagen 'persona hablando.jpg' no encontrada.")
 
-    st.markdown("---")
-    
     st.write("Pulsa 'Inicio' y habla.")
     
-    # Botón Bokeh estilizado por el CSS (Compacto y plano)
     stt_button = Button(label="Inicio", width=130)
     stt_button.js_on_event("button_click", CustomJS(code="""
         var recognition = new webkitSpeechRecognition();
@@ -137,36 +103,26 @@ with col_ctrl:
         stt_button, events="GET_TEXT", key="listen", 
         refresh_on_update=False, override_height=65, debounce_time=0)
     
-    st.markdown('</div>', unsafe_allow_html=True) # Cierre flat-card
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# Columna 2: Panel de Feedback (Logs, MQTT Status)
 with col_msg:
     st.markdown('<div class="flat-card">', unsafe_allow_html=True)
     st.markdown('<div class="card-header">Estado y Respuestas</div>', unsafe_allow_html=True)
     
-    # Estado de Conexión (feedback inmediato)
-    st.markdown("**MQTT:** `broker.mqttdashboard.com` 🟢 Conectado")
+    st.markdown("🟢 **MQTT:** `broker.mqttdashboard.com`")
     
-    # Placeholder para resultados dinámicos
-    # Usamos st.empty() para actualizar el mismo espacio y no crecer hacia abajo
     log_area = st.empty()
     log_area.info("Último Comando: [Esperando entrada...]")
     
-    # Procesamiento de voz y envío MQTT
     if result and "GET_TEXT" in result:
         comando = result.get("GET_TEXT")
-        
-        # Feedback visual nítido y compacto
         log_area.success(f"**Detectado:** {comando}")
         
-        # Publicación MQTT
         mensaje_json = json.dumps({"Act1": comando.strip()})
         st.session_state.client.publish(topic, mensaje_json)
-        
         st.write(f"📤 Enviado a: `{topic}`")
 
-    st.markdown('</div>', unsafe_allow_html=True) # Cierre flat-card
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- FOOTER SUTIL (UNA SOLA LÍNEA) ---
 st.markdown("---")
-st.caption(f"Status: Connected | Broker: {broker} | Client: {client_id}")
+st.caption(f"Status: Connected | Client: {client_id}")
