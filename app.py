@@ -1,62 +1,76 @@
-import os
 import streamlit as st
+import os
+import json
+import time
 from bokeh.models.widgets import Button
 from bokeh.models import CustomJS
 from streamlit_bokeh_events import streamlit_bokeh_events
 from PIL import Image
-import time
-import glob
 import paho.mqtt.client as paho
-import json
-from gtts import gTTS
-from googletrans import Translator
 
-def on_publish(client,userdata,result):             #create function for callback
-    print("el dato ha sido publicado \n")
-    pass
+# --- Configuración Inicial ---
+st.set_page_config(page_title="Interfaz Multimodal", layout="centered")
 
-def on_message(client, userdata, message):
-    global message_received
-    time.sleep(2)
-    message_received=str(message.payload.decode("utf-8"))
-    st.write(message_received)
+# Crear directorio de trabajo solo una vez
+if not os.path.exists("temp"):
+    os.makedirs("temp")
 
-broker="broker.mqttdashboard.com"
-port=1883
-client1= paho.Client("GIT-HUBC")
-client1.on_message = on_message
+# --- Lógica MQTT ---
+broker = "broker.mqttdashboard.com"
+port = 1883
 
+def on_publish(client, userdata, result):
+    print("El dato ha sido publicado")
 
+def setup_client():
+    client = paho.Client("GIT-HUBC")
+    client.on_publish = on_publish
+    return client
 
-st.title("INTERFACES MULTIMODALES")
-st.subheader("CONTROL POR VOZ")
+# Inicializar sesión
+if "client" not in st.session_state:
+    st.session_state.client = setup_client()
 
-image = Image.open('voice_ctrl.jpg')
+# --- UI y Ergonomía Cognitiva ---
+st.title("Interfaces Multimodales")
+st.markdown("---")
 
-st.image(image, width=200)
+col1, col2 = st.columns([1, 2])
 
+with col1:
+    try:
+        image = Image.open('voice_ctrl.jpg')
+        st.image(image, width=150)
+    except:
+        st.warning("Imagen no encontrada")
 
+with col2:
+    st.subheader("Control por Voz")
+    st.write("Presiona el botón e interactúa con el sistema. Tu comando será enviado vía MQTT.")
 
+# --- Estilos personalizados para el botón ---
+st.markdown("""
+    <style>
+    .bk-btn {
+        background-color: #4CAF50 !important;
+        color: white !important;
+        font-weight: bold !important;
+        border-radius: 8px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-st.write("Toca el Botón y habla ")
-
-stt_button = Button(label=" Inicio ", width=200)
+# --- Componente de Voz ---
+stt_button = Button(label="Iniciar Escucha", width=200)
 
 stt_button.js_on_event("button_click", CustomJS(code="""
     var recognition = new webkitSpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
- 
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    
     recognition.onresult = function (e) {
-        var value = "";
-        for (var i = e.resultIndex; i < e.results.length; ++i) {
-            if (e.results[i].isFinal) {
-                value += e.results[i][0].transcript;
-            }
-        }
-        if ( value != "") {
-            document.dispatchEvent(new CustomEvent("GET_TEXT", {detail: value}));
-        }
+        var value = e.results[0][0].transcript;
+        document.dispatchEvent(new CustomEvent("GET_TEXT", {detail: value}));
     }
     recognition.start();
     """))
@@ -69,16 +83,24 @@ result = streamlit_bokeh_events(
     override_height=75,
     debounce_time=0)
 
-if result:
-    if "GET_TEXT" in result:
-        st.write(result.get("GET_TEXT"))
-        client1.on_publish = on_publish                            
-        client1.connect(broker,port)  
-        message =json.dumps({"Act1":result.get("GET_TEXT").strip()})
-        ret= client1.publish("voice_ctrl", message)
-
+# --- Procesamiento de Interacción ---
+if result and "GET_TEXT" in result:
+    comando = result.get("GET_TEXT")
     
-    try:
-        os.mkdir("temp")
-    except:
-        pass
+    # Feedback visual claro
+    with st.status("Procesando comando...", expanded=True) as status:
+        st.write(f"Comando detectado: **{comando}**")
+        
+        try:
+            st.session_state.client.connect(broker, port)
+            message = json.dumps({"Act1": comando.strip()})
+            st.session_state.client.publish("voice_ctrl", message)
+            st.success("Enviado correctamente al broker.")
+        except Exception as e:
+            st.error(f"Error de conexión: {e}")
+        
+        status.update(label="Acción completada", state="complete")
+
+# Área de logs/mensajes
+st.divider()
+st.caption("Estado del sistema: Conectado a broker.mqttdashboard.com")
