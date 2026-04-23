@@ -8,41 +8,50 @@ from streamlit_bokeh_events import streamlit_bokeh_events
 from PIL import Image
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(
-    page_title="Control de Voz",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+st.set_page_config(page_title="Control de Voz", layout="wide")
 
-# --- CSS: ESTILO LIMPIO Y CONTRASTE ---
+# --- CSS: MODO OSCURO (DARK MODE) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #FFFFFF; }
-    .main-title { color: #212529; font-weight: 700; font-size: 2.2em; margin-bottom: 2px; }
-    .sub-title { color: #6c757d; font-weight: 400; margin-top: 0px; margin-bottom: 20px; }
+    /* Fondo de la app en gris muy oscuro */
+    .stApp {
+        background-color: #121212;
+        color: #e0e0e0;
+    }
+
+    /* Títulos en blanco para asegurar visibilidad */
+    .main-title { color: #ffffff !important; }
+    .sub-title { color: #b0b0b0 !important; }
+
+    /* Tarjetas oscuras */
     .flat-card {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
+        background-color: #1e1e1e;
+        border-radius: 10px;
+        border: 1px solid #333333;
         padding: 20px;
         margin-bottom: 15px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        color: #e0e0e0;
     }
-    .card-header { color: #495057; font-weight: 600; font-size: 1.1em; margin-bottom: 15px; width: 100%; text-align: left;}
+
+    /* Texto de cabecera en las tarjetas */
+    .card-header {
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 1.1em;
+        margin-bottom: 10px;
+    }
+
+    /* Botón verde que resalta en fondo oscuro */
     .bk-btn {
         background-color: #28a745 !important;
         color: white !important;
         font-weight: bold !important;
         border-radius: 6px !important;
         border: none !important;
-        font-size: 1.0em !important;
-        height: 45px !important;
-        width: 150px !important;
     }
-    #MainMenu, footer, header {visibility: hidden;}
-    .block-container { padding-top: 1rem; padding-bottom: 1rem; }
+    
+    /* Asegurar que el texto normal se lea bien */
+    div { color: #e0e0e0; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -63,24 +72,22 @@ if "client" not in st.session_state:
 st.markdown('<h1 class="main-title">Interfaces Multimodales</h1>', unsafe_allow_html=True)
 st.markdown('<h3 class="sub-title">Control de Voz Compacto</h3>', unsafe_allow_html=True)
 
-# --- CUERPO PRINCIPAL ---
-col_ctrl, col_msg = st.columns([1.3, 1], gap="medium")
+# --- CUERPO ---
+col_ctrl, col_msg = st.columns([1, 1.2], gap="medium")
 
-# Columna 1: Panel de Control
 with col_ctrl:
     st.markdown('<div class="flat-card">', unsafe_allow_html=True)
     st.markdown('<div class="card-header">Panel de Acción</div>', unsafe_allow_html=True)
     
     try:
         image = Image.open('persona hablando.jpg')
-        st.image(image, width=250, use_column_width=False)
+        st.image(image, width=120)
     except:
         st.info("Imagen 'persona hablando.jpg' no encontrada.")
 
-    st.markdown("---", style="width: 100%;")
     st.write("Pulsa 'Inicio' y habla.")
     
-    stt_button = Button(label="Inicio", width=150)
+    stt_button = Button(label="Inicio", width=130)
     stt_button.js_on_event("button_click", CustomJS(code="""
         var recognition = new webkitSpeechRecognition();
         recognition.continuous = false;
@@ -98,12 +105,11 @@ with col_ctrl:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Columna 2: Panel de Feedback
 with col_msg:
     st.markdown('<div class="flat-card">', unsafe_allow_html=True)
     st.markdown('<div class="card-header">Estado y Respuestas</div>', unsafe_allow_html=True)
     
-    st.markdown("**MQTT:** `broker.mqttdashboard.com` 🟢 Conectado")
+    st.markdown("🟢 **MQTT:** `broker.mqttdashboard.com`")
     
     log_area = st.empty()
     log_area.info("Último Comando: [Esperando entrada...]")
@@ -118,6 +124,5 @@ with col_msg:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- FOOTER ---
 st.markdown("---")
-st.caption(f"Status: Connected | Broker: {broker} | Client: {client_id}")
+st.caption(f"Status: Connected | Client: {client_id}")
