@@ -7,83 +7,79 @@ from bokeh.models import CustomJS
 from streamlit_bokeh_events import streamlit_bokeh_events
 from PIL import Image
 
-# --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Control por Voz Premium", layout="wide", initial_sidebar_state="collapsed")
+# --- CONFIGURACIÓN DE PÁGINA: Compacta ---
+st.set_page_config(
+    page_title="Control de Voz Compacto",
+    layout="wide", # Usamos todo el ancho para reducir altura
+    initial_sidebar_state="collapsed"
+)
 
-# --- CSS AVANZADO: GLASSMORPHISM & MICRO-INTERACCIONES ---
-# Este bloque CSS transforma completamente la estética de la app
+# --- CSS: Legibilidad y Contraste Extremo ---
+# Fondo blanco puro, texto gris oscuro para máximo contraste, diseño plano (flat)
 st.markdown("""
     <style>
-    /* Fondo de la página con degradado suave */
+    /* Fondo blanco puro para la app */
     .stApp {
-        background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+        background-color: #FFFFFF;
     }
 
-    /* Tarjeta principal con efecto Glassmorphism */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.25);
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        padding: 40px;
-        margin: auto;
-        max-width: 800px;
-        text-align: center;
-    }
-
-    /* Estilo del título principal */
+    /* Título principal: Grande, oscuro y nítido */
     .main-title {
-        font-family: 'Helvetica Neue', sans-serif;
-        color: #1a2a4a;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: #212529; /* Gris casi negro */
         font-weight: 700;
-        letter-spacing: -1px;
-        margin-bottom: 5px;
+        margin-bottom: 2px;
+        font-size: 2.2em;
     }
 
-    /* Estilo del subtítulo */
+    /* Subtítulo: Más pequeño y sutil */
     .sub-title {
-        font-family: 'Helvetica Neue', sans-serif;
-        color: #5c6c8c;
-        font-weight: 300;
-        margin-bottom: 30px;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: #6c757d; /* Gris medio */
+        font-weight: 400;
+        margin-top: 0px;
+        margin-bottom: 20px;
     }
 
-    /* Botón Bokeh personalizado como círculo flotante */
+    /* Contenedor de "Tarjeta" Plana: Fondo gris muy claro, bordes nítidos */
+    .flat-card {
+        background-color: #f8f9fa; /* Gris clarísimo */
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    /* Subcabeceras dentro de tarjetas */
+    .card-header {
+        color: #495057;
+        font-weight: 600;
+        font-size: 1.1em;
+        margin-bottom: 10px;
+    }
+
+    /* Botón Bokeh personalizado: Verde sólido, sin degradados */
     .bk-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        background-color: #28a745 !important; /* Verde sólido */
         color: white !important;
         font-weight: bold !important;
-        border-radius: 50px !important; /* Círculo */
+        border-radius: 6px !important;
         border: none !important;
-        box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3) !important;
-        transition: all 0.3s ease !important; /* Animación suave */
-        font-size: 1.1em !important;
-        height: 60px !important;
-        width: 150px !important;
+        font-size: 1.0em !important;
+        height: 45px !important;
+        width: 130px !important;
     }
 
-    /* Micro-interacción: Efecto hover en el botón */
-    .bk-btn:hover {
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
-        transform: translateY(-2px); /* Pequeño salto */
-        box-shadow: 0 6px 20px rgba(118, 75, 162, 0.4) !important;
-    }
-
-    /* Contenedor del feedback MQTT */
-    .feedback-box {
-        background-color: rgba(255, 255, 255, 0.5);
-        border-radius: 10px;
-        padding: 15px;
-        margin-top: 20px;
-        font-family: monospace;
-        font-size: 0.9em;
-        border: 1px solid rgba(0,0,0,0.05);
-    }
-
-    /* Ocultar el footer por defecto de Streamlit */
+    /* Ocultar elementos de Streamlit que ocupan espacio */
+    #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Reducir márgenes superiores de bloques de Streamlit */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -101,30 +97,31 @@ if "client" not in st.session_state:
         st.error("Error conectando al broker")
 
 # --- CABECERA ---
-# Usamos HTML para aplicar las clases de estilo definidas arriba
 st.markdown('<h1 class="main-title">Interfaces Multimodales</h1>', unsafe_allow_html=True)
-st.markdown('<h3 class="sub-title">Control por Voz Premium</h3>', unsafe_allow_html=True)
+st.markdown('<h3 class="sub-title">Control de Voz Compacto</h3>', unsafe_allow_html=True)
 
-# --- CUERPO PRINCIPAL (TARJETAglass) ---
-# Creamos un contenedor centrado
-col_main = st.columns([1, 4, 1])[1]
+# --- CUERPO PRINCIPAL (2 COLUMNAS PARA CERO SCROLL) ---
+col_ctrl, col_msg = st.columns([1, 1.2], gap="medium")
 
-with col_main:
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+# Columna 1: Panel de Control (Imagen, Botón, Instrucciones)
+with col_ctrl:
+    st.markdown('<div class="flat-card">', unsafe_allow_html=True)
+    st.markdown('<div class="card-header">Panel de Acción</div>', unsafe_allow_html=True)
     
-    # Imagen centrada y estilizada
+    # Imagen centrada y compacta (usando tu imagen suministrada)
     try:
+        # Asegúrate de tener 'persona hablando.jpg' en la carpeta
         image = Image.open('persona hablando.jpg')
-        st.image(image, width=150, use_column_width=False, output_format="PNG")
+        st.image(image, width=120, use_column_width=False)
     except:
         st.info("Imagen 'persona hablando.jpg' no encontrada.")
 
     st.markdown("---")
     
-    st.markdown("##### Pulsa el botón y habla claramente.")
+    st.write("Pulsa 'Inicio' y habla.")
     
-    # Botón Bokeh estilizado por el CSS
-    stt_button = Button(label="Inicio", width=150)
+    # Botón Bokeh estilizado por el CSS (Compacto y plano)
+    stt_button = Button(label="Inicio", width=130)
     stt_button.js_on_event("button_click", CustomJS(code="""
         var recognition = new webkitSpeechRecognition();
         recognition.continuous = false;
@@ -138,23 +135,38 @@ with col_main:
 
     result = streamlit_bokeh_events(
         stt_button, events="GET_TEXT", key="listen", 
-        refresh_on_update=False, override_height=80, debounce_time=0)
+        refresh_on_update=False, override_height=65, debounce_time=0)
     
-    # Área de Feedback dinámica
+    st.markdown('</div>', unsafe_allow_html=True) # Cierre flat-card
+
+# Columna 2: Panel de Feedback (Logs, MQTT Status)
+with col_msg:
+    st.markdown('<div class="flat-card">', unsafe_allow_html=True)
+    st.markdown('<div class="card-header">Estado y Respuestas</div>', unsafe_allow_html=True)
+    
+    # Estado de Conexión (feedback inmediato)
+    st.markdown("**MQTT:** `broker.mqttdashboard.com` 🟢 Conectado")
+    
+    # Placeholder para resultados dinámicos
+    # Usamos st.empty() para actualizar el mismo espacio y no crecer hacia abajo
+    log_area = st.empty()
+    log_area.info("Último Comando: [Esperando entrada...]")
+    
+    # Procesamiento de voz y envío MQTT
     if result and "GET_TEXT" in result:
         comando = result.get("GET_TEXT")
         
-        # Feedback visual inmediato
-        st.success(f"**Detectado:** {comando}")
+        # Feedback visual nítido y compacto
+        log_area.success(f"**Detectado:** {comando}")
         
         # Publicación MQTT
         mensaje_json = json.dumps({"Act1": comando.strip()})
         st.session_state.client.publish(topic, mensaje_json)
         
-        st.markdown(f'<div class="feedback-box">📤 Enviado a: `{topic}`</div>', unsafe_allow_html=True)
+        st.write(f"📤 Enviado a: `{topic}`")
 
-    st.markdown('</div>', unsafe_allow_html=True) # Cierre de glass-card
+    st.markdown('</div>', unsafe_allow_html=True) # Cierre flat-card
 
-# --- FOOTER SUTIL ---
-st.markdown("<br><br>", unsafe_allow_html=True)
-st.columns([1, 6, 1])[1].caption(f"Status: Connected | Broker: {broker} | Client: {client_id}")
+# --- FOOTER SUTIL (UNA SOLA LÍNEA) ---
+st.markdown("---")
+st.caption(f"Status: Connected | Broker: {broker} | Client: {client_id}")
