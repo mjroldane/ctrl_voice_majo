@@ -8,30 +8,86 @@ from streamlit_bokeh_events import streamlit_bokeh_events
 from PIL import Image
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Control Multimodal", layout="wide")
+st.set_page_config(page_title="Control por Voz Premium", layout="wide", initial_sidebar_state="collapsed")
 
-# --- CSS PARA ESTÉTICA DE DASHBOARD ---
+# --- CSS AVANZADO: GLASSMORPHISM & MICRO-INTERACCIONES ---
+# Este bloque CSS transforma completamente la estética de la app
 st.markdown("""
     <style>
-    .card {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 15px;
-        border: 1px solid #e0e0e0;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
+    /* Fondo de la página con degradado suave */
+    .stApp {
+        background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
     }
-    .stButton button {
-        width: 100%;
+
+    /* Tarjeta principal con efecto Glassmorphism */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.25);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        padding: 40px;
+        margin: auto;
+        max-width: 800px;
+        text-align: center;
+    }
+
+    /* Estilo del título principal */
+    .main-title {
+        font-family: 'Helvetica Neue', sans-serif;
+        color: #1a2a4a;
+        font-weight: 700;
+        letter-spacing: -1px;
+        margin-bottom: 5px;
+    }
+
+    /* Estilo del subtítulo */
+    .sub-title {
+        font-family: 'Helvetica Neue', sans-serif;
+        color: #5c6c8c;
+        font-weight: 300;
+        margin-bottom: 30px;
+    }
+
+    /* Botón Bokeh personalizado como círculo flotante */
+    .bk-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        font-weight: bold !important;
+        border-radius: 50px !important; /* Círculo */
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3) !important;
+        transition: all 0.3s ease !important; /* Animación suave */
+        font-size: 1.1em !important;
+        height: 60px !important;
+        width: 150px !important;
+    }
+
+    /* Micro-interacción: Efecto hover en el botón */
+    .bk-btn:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+        transform: translateY(-2px); /* Pequeño salto */
+        box-shadow: 0 6px 20px rgba(118, 75, 162, 0.4) !important;
+    }
+
+    /* Contenedor del feedback MQTT */
+    .feedback-box {
+        background-color: rgba(255, 255, 255, 0.5);
         border-radius: 10px;
-        height: 50px;
-        background-color: #4CAF50;
-        color: white;
+        padding: 15px;
+        margin-top: 20px;
+        font-family: monospace;
+        font-size: 0.9em;
+        border: 1px solid rgba(0,0,0,0.05);
     }
+
+    /* Ocultar el footer por defecto de Streamlit */
+    footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# --- LÓGICA MQTT ---
+# --- LÓGICA MQTT (SE MANTIENE IGUAL) ---
 broker = "broker.mqttdashboard.com"
 port = 1883
 topic = "voice_ctrl"
@@ -45,29 +101,30 @@ if "client" not in st.session_state:
         st.error("Error conectando al broker")
 
 # --- CABECERA ---
-st.title("INTERFACES MULTIMODALES")
-st.markdown("### CONTROL POR VOZ")
+# Usamos HTML para aplicar las clases de estilo definidas arriba
+st.markdown('<h1 class="main-title">Interfaces Multimodales</h1>', unsafe_allow_html=True)
+st.markdown('<h3 class="sub-title">Control por Voz Premium</h3>', unsafe_allow_html=True)
 
-try:
-    image = Image.open('voice_ctrl.jpg')
-    st.image(image, width=300)
-except:
-    st.info("Imagen 'voice_ctrl.jpg' no encontrada.")
+# --- CUERPO PRINCIPAL (TARJETAglass) ---
+# Creamos un contenedor centrado
+col_main = st.columns([1, 4, 1])[1]
 
-# --- CUERPO PRINCIPAL ---
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("CONTROL DE VOZ")
-    st.markdown("""
-    **INSTRUCCIONES:**
-    1. Toca el botón 'Inicio'.
-    2. Habla claramente tu comando.
-    3. El sistema procesará tu voz.
-    """)
+with col_main:
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     
-    stt_button = Button(label="Inicio", width=200)
+    # Imagen centrada y estilizada
+    try:
+        image = Image.open('persona hablando.jpg')
+        st.image(image, width=150, use_column_width=False, output_format="PNG")
+    except:
+        st.info("Imagen 'persona hablando.jpg' no encontrada.")
+
+    st.markdown("---")
+    
+    st.markdown("##### Pulsa el botón y habla claramente.")
+    
+    # Botón Bokeh estilizado por el CSS
+    stt_button = Button(label="Inicio", width=150)
     stt_button.js_on_event("button_click", CustomJS(code="""
         var recognition = new webkitSpeechRecognition();
         recognition.continuous = false;
@@ -81,33 +138,23 @@ with col1:
 
     result = streamlit_bokeh_events(
         stt_button, events="GET_TEXT", key="listen", 
-        refresh_on_update=False, override_height=60, debounce_time=0)
+        refresh_on_update=False, override_height=80, debounce_time=0)
     
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with col2:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("MENSAJES RECIBIDOS")
-    st.write("🟢 **MQTT Estado:** Conectado")
-    
-    last_cmd = st.empty()
-    last_cmd.info("Último Comando: [Esperando entrada...]")
-    
+    # Área de Feedback dinámica
     if result and "GET_TEXT" in result:
         comando = result.get("GET_TEXT")
-        last_cmd.success(f"Último Comando: {comando}")
         
+        # Feedback visual inmediato
+        st.success(f"**Detectado:** {comando}")
+        
+        # Publicación MQTT
         mensaje_json = json.dumps({"Act1": comando.strip()})
         st.session_state.client.publish(topic, mensaje_json)
-        st.write(f"**Respuesta MQTT:** Mensaje enviado a {topic}")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown(f'<div class="feedback-box">📤 Enviado a: `{topic}`</div>', unsafe_allow_html=True)
 
-# --- FOOTER ---
-st.markdown("---")
-st.markdown("**Configuración:**")
-cols = st.columns(4)
-cols[0].markdown(f"Broker: `{broker}`")
-cols[1].markdown(f"Puerto: `{port}`")
-cols[2].markdown(f"Cliente: `{client_id}`")
-cols[3].markdown(f"Tópico: `{topic}`")
+    st.markdown('</div>', unsafe_allow_html=True) # Cierre de glass-card
+
+# --- FOOTER SUTIL ---
+st.markdown("<br><br>", unsafe_allow_html=True)
+st.columns([1, 6, 1])[1].caption(f"Status: Connected | Broker: {broker} | Client: {client_id}")
